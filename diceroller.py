@@ -4,6 +4,7 @@ import re
 import random
 from rich.console import Console
 from rich.table import Table
+from rich import box
 import os
 
 if os.name == "posix":
@@ -20,8 +21,13 @@ class DiceRoller:
     inputPatternRegEx: str = "\d+d\d+((\+|\-)\d+)?"
     
     
+    def __init__(self) -> None:
+        
+        self.console = Console()
+        
     
-    def main():
+    
+    def main(self):
         
         while True:
             
@@ -48,7 +54,7 @@ class DiceRoller:
             inputs: list[int] = [int(num) for num in re.findall("\d+", line)]
             
             # Set the added modifier boolean
-            addedModifier: bool = ( len(inputs) == 3 )
+            addedModifier: bool = (len(inputs) == 3)
             
             #Set the modifier to 0 if there is none given
             if not addedModifier:
@@ -58,12 +64,11 @@ class DiceRoller:
             if addedModifier and "-" in line:
                 inputs[2] *= -1
             
-            DiceRoller.rollDice(inputs[0], inputs[1], inputs[2])
+            self.rollDice(inputs[0], inputs[1], inputs[2])
             
             
             
-    @classmethod
-    def rollDice(cls, numDice: int, diceMax: int, modifier: int) -> None:
+    def rollDice(self, numDice: int, diceMax: int, modifier: int) -> None:
         
             # Print the roll status
             print("\nRolling {0} d{1} with {2:+} modifier".format(
@@ -72,9 +77,11 @@ class DiceRoller:
                 modifier
             ))  
             
-            # Print roll table headers
-            print("\n{0:<10}{1}".format("Roll #", "Value"))
-            print("------------------")
+            # Define the roll table
+            rollTable: Table = Table(box = box.SIMPLE_HEAD, show_footer = True)
+            rollTable.add_column("Roll #", no_wrap = True, width = 10, footer = "Raw Total")
+            rollTable.add_column("Value", no_wrap = True, width = 10)
+            rollTable.add_column("Sum", no_wrap = True, width = 10)
             
             # Roll and sum the dice
             diceSum: int = 0
@@ -83,40 +90,42 @@ class DiceRoller:
                 diceRoll: int = random.randint(1, diceMax)
                 diceSum += diceRoll
                 
-                print("{0:<10}{1}".format("Roll " + str(index + 1), diceRoll))
-
-
-
-            print("\n{0:<12}{1}".format("Dice Sum", diceSum))
-            print("{0:<12}{1:+}".format("Modifier", modifier))
-            print("{0:<12}{1}".format("Total", diceSum + modifier))
+                rollTable.add_row("Roll {0}".format(index), str(diceRoll), str(diceSum))
+                
+            # Print the table
+            rollTable.columns[2].footer = str(diceSum)
+            self.console.print(rollTable)
             
+            # Define the statsitcs table
+            stasticsTable: Table = Table(box = box.SIMPLE_HEAD)
+            stasticsTable.add_column("Roll Stastics", no_wrap = True, width = 20)
+            stasticsTable.add_column("", no_wrap = True, width = 10)
             
-            print("\nRoll Stastics")
-            print("--------------------------------")
-            print("{0:<25}{1}".format("Roll Max", round(
-                numDice * diceMax
-            )))
-            print("{0:<25}{1}".format("Roll Average", round(
-                ((diceMax + 1) / 2) * numDice, 4
-            )))
-            print("{0:<25}{1}".format("Roll Min", round(
-                numDice
-            )))
-            print("{0:<25}{1}".format("Standard Deviation", round(
-                DiceRoller.standardDeviation(numDice, diceMax), 4
-            )))
-            print("{0:<25}{1}".format("Probability = X", round(
-                DiceRoller.sumProbability(diceSum, numDice, diceMax) * 100, 4
-            )))
-            print("{0:<25}{1}".format("Probability ≤ X", round(
-                DiceRoller.sumAndBelowProbability(diceSum, numDice, diceMax) * 100, 4
-            )))
-            print("{0:<25}{1}".format("Probability ≥ X", round(
-                DiceRoller.sumAndAboveProbability(diceSum, numDice, diceMax) * 100, 4
-            )))
-                    
-                    
+            # Calculate the statsitcs for the roll
+            stasticsTable.add_row("Roll Max", str(round( numDice * diceMax, 4 )) )
+            stasticsTable.add_row("Roll Mean", str(round( ((diceMax + 1) / 2) * numDice, 4 )) )
+            stasticsTable.add_row("Roll Min", str(round( numDice, 4 )) )
+            stasticsTable.add_row("Standard Deviation",  str(round( DiceRoller.standardDeviation(numDice, diceMax), 4 )) )
+            stasticsTable.add_row("Probability = X",  str(round( DiceRoller.sumProbability(diceSum, numDice, diceMax) * 100, 4 )) )
+            stasticsTable.add_row("Probability ≤ X",  str(round( DiceRoller.sumAndBelowProbability(diceSum, numDice, diceMax) * 100, 4 )) )
+            stasticsTable.add_row("Probability ≥ X",  str(round( DiceRoller.sumAndAboveProbability(diceSum, numDice, diceMax) * 100, 4 )) )
+            
+            # Print the table
+            self.console.print(stasticsTable)   
+            
+            # Define the final numbers table
+            finalTable: Table = Table(box = box.SIMPLE_HEAD, show_footer = True)  
+            finalTable.add_column("Final Numbers", no_wrap = True, width = 20, footer = "Final Total")
+            finalTable.add_column("", no_wrap = True, width = 10)
+                
+            # Add values
+            finalTable.add_row("Dice Sum", str( diceSum ))
+            finalTable.add_row("Modifier", "{:+}".format(modifier))
+            
+            # Print table
+            finalTable.columns[1].footer = str(diceSum + modifier)
+            self.console.print(finalTable)
+                
                 
                 
     @classmethod
@@ -164,8 +173,10 @@ class DiceRoller:
         
         return sum( DiceRoller.__sumsForTotal( total - die, numDice - 1, diceMax) for die in range(1, diceMax + 1) )
         
+        
+        
     
     
 
 if __name__ == "__main__":
-    DiceRoller.main()
+    DiceRoller().main()
