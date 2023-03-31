@@ -2,8 +2,18 @@ from functools import lru_cache
 import math
 import re
 import random
-import readline
+from rich.console import Console
+from rich.table import Table
 import os
+
+if os.name == "posix":
+    import readline
+elif os.name == "nt":
+    import pyreadline3
+else:
+    raise OSError("Operating System is not compatable")
+
+
 
 class DiceRoller:
     
@@ -17,7 +27,11 @@ class DiceRoller:
             
             # Get the next input from the user
             line: str = input("\n>>> ")
-            os.system("clear")
+            
+            if os.name == "posix":
+                os.system("clear")
+            if os.name == "nt":
+                os.system("cls")
             
             # Quit if the input is q
             if re.fullmatch("exit|q|stop", line):
@@ -44,13 +58,13 @@ class DiceRoller:
             if addedModifier and "-" in line:
                 inputs[2] *= -1
             
-            #Set dice values based on inputs
-            numDice: int = inputs[0]
-            diceMax: int = inputs[1]
-            modifier: int = inputs[2]
+            DiceRoller.rollDice(inputs[0], inputs[1], inputs[2])
             
             
             
+    @classmethod
+    def rollDice(cls, numDice: int, diceMax: int, modifier: int) -> None:
+        
             # Print the roll status
             print("\nRolling {0} d{1} with {2:+} modifier".format(
                 numDice,
