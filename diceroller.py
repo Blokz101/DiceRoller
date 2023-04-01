@@ -24,15 +24,11 @@ class DiceRoller:
     
     inputPatternRegEx: str = "\d+d\d+((\+|\-)\d+)?"
     
-    diceRollerTheme: Theme = Theme({
-        "variable": "bold cyan",
-        "error": "red"
-    })
     
     
     def __init__(self) -> None:
         
-        self.console = Console(theme = DiceRoller.diceRollerTheme)
+        self.console = Console()
         
     
     
@@ -41,7 +37,7 @@ class DiceRoller:
         while True:
             
             # Get the next input from the user
-            self.console.rule("[bold white] New Roll", style = "bold white")
+            self.console.rule(style = "bold dark_magenta")
             line: str = input(">>> ")
             
             # Quit if the input is q
@@ -50,7 +46,7 @@ class DiceRoller:
         
             # Check if the input is valid
             if not re.fullmatch(DiceRoller.inputPatternRegEx, line):
-                self.console.print("Input not valid", style = "error")
+                self.console.print("Input not valid", style = "")
                 continue
             
             # Split input into numbers
@@ -189,11 +185,11 @@ class DiceRoller:
     @classmethod
     def sumAndAboveProbability(cls, total: int, numDice: int, diceMax: int) -> float:
         
-        if total > diceMax:
-            return 0
-        
         if total == numDice * diceMax:
             return DiceRoller.sumProbability(numDice, numDice, diceMax)
+        
+        if total > diceMax * numDice:
+            return 0
         
         return DiceRoller.sumProbability(total, numDice, diceMax) + DiceRoller.sumAndAboveProbability(total + 1, numDice, diceMax)
     
@@ -202,11 +198,11 @@ class DiceRoller:
     @classmethod
     def sumAndBelowProbability(cls, total: int, numDice: int, diceMax: int) -> float:
         
-        if total < numDice:
-            return 0
-        
         if total == numDice:
             return DiceRoller.sumProbability(numDice, numDice, diceMax)
+        
+        if total < numDice:
+            return 0
         
         return DiceRoller.sumProbability(total, numDice, diceMax) + DiceRoller.sumAndBelowProbability(total - 1, numDice, diceMax)
     
