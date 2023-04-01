@@ -1,4 +1,5 @@
 from DiceRoller import DiceRoller
+from ShortcutManager import ShortcutManager
 
 from rich.console import Console
 
@@ -24,6 +25,7 @@ class DndAssistant:
     def __init__(self):
         
         self.console: Console = Console()
+        self.shortcuts: ShortcutManager = ShortcutManager("shortcuts.csv")
         
         
     
@@ -41,15 +43,12 @@ class DndAssistant:
                 break
             
             
-            if re.fullmatch("(\d+)?d\d+((\+|\-)\d+)?", line):
-                roll: DiceRoller = DiceRoller(line)
-                
-                self.console.line()
-                self.console.print(roll.status)
-                self.console.print(roll.rollTable)
-                self.console.print(roll.stasticsTable)
-                self.console.print(roll.finalTable)
-                
+            if re.fullmatch("(\d+)?d\d+((\+|\-|\/)\d+)?", line):
+                self.rollDice(line)
+                continue
+            
+            if self.shortcuts.match(line):
+                self.rollDice(self.shortcuts.getShortcut(line))
                 continue
             
             
@@ -57,6 +56,15 @@ class DndAssistant:
         
         
         
+    def rollDice(self, line:str) -> None:
+        
+        roll: DiceRoller = DiceRoller(line)
+                
+        self.console.line()
+        self.console.print(roll.status)
+        self.console.print(roll.rollTable)
+        self.console.print(roll.stasticsTable)
+        self.console.print(roll.finalTable)
         
         
         
