@@ -35,15 +35,15 @@ class DndAssistant:
         while True:
             
             # Get the next input from the user
-            self.console.rule(style = "bold dark_magenta")
+            self.console.rule(style = "dark_magenta")
             line: str = input(">>> ")
             
             # Quit if the input is q
             if re.fullmatch("exit|q|stop", line):
                 break
+
             
-            
-            if re.fullmatch("(\d+)?d\d+((\+|\-|\/)\d+)?", line):
+            if re.fullmatch("((\d+)?d(\d+)([\+\-\*\/\(\)\d+]+)? ?)+", line):
                 self.rollDice(line)
                 continue
             
@@ -56,15 +56,19 @@ class DndAssistant:
         
         
         
-    def rollDice(self, line:str) -> None:
+    def rollDice(self, rawInput:str) -> None:
         
-        roll: DiceRoller = DiceRoller(line)
-                
-        self.console.line()
-        self.console.print(roll.status)
-        self.console.print(roll.rollTable)
-        self.console.print(roll.stasticsTable)
-        self.console.print(roll.finalTable)
+        instructionList: list = re.split(" ", rawInput)
+        
+        for instruction in instructionList:
+        
+            roll: DiceRoller = DiceRoller(instruction)
+                    
+            self.console.line()
+            self.console.print(roll.status)
+            self.console.print(roll.rollTable)
+            self.console.print(roll.stasticsTable)
+            self.console.print(roll.finalTable)
         
         
         

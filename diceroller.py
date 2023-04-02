@@ -29,130 +29,148 @@ class DiceRoller:
         self.stasticsTable: Table = Table(box = box.SIMPLE_HEAD)
         self.finalTable: Table = Table(box = box.SIMPLE_HEAD, show_footer = True)
         
-        numDice, diceMax, modifier = DiceRoller.__readDiceSyntax(self.rawinput)
-        self.__rollDice(numDice, diceMax, modifier)
+        instruction: dict = DiceRoller.__readDiceSyntax(self.rawinput)
+        self.__rollDice(instruction["numDice"], instruction["diceMax"], instruction["operation"], instruction["modifier"])
         
         
         
             
             
-    def __rollDice(self, numDice: int, diceMax: int, modifier: int) -> tuple:
+    def __rollDice(self, numDice: int, diceMax: int, operation: str, modifier: int) -> None:
 
-            # Print the roll status
-            self.status = Text.assemble(
-                ("Rolling ", "bold white"),
-                ("{0} D{1}".format(numDice, diceMax), "bold dark_magenta"),
+        # Print the roll status
+        self.status = Text.assemble(
+            ("Rolling ", "bold white"),
+            ("{0} D{1}".format(numDice, diceMax), "dark_magenta"),
+        )
+        
+        if operation:
+            self.status.append(Text.assemble(
                 (" with ", "bold white"),
-                ("{0:+} modifier".format(modifier), "bold dark_magenta")
+                ("{0}{1} modifier".format(operation, modifier), "dark_magenta")
+            ))
+            
+        
+        # Define the roll table
+        self.rollTable.add_column("Roll #", no_wrap = True, width = 10)
+        self.rollTable.add_column("Value", no_wrap = True, width = 10)
+        self.rollTable.add_column("Total", no_wrap = True, width = 10)
+        
+        # Roll and sum the dice
+        diceSum: int = 0
+        for index in range(numDice):
+            
+            diceRoll: int = random.randint(1, diceMax)
+            diceSum += diceRoll
+            
+            self.rolls.append(diceRoll)
+            
+            self.rollTable.add_row(
+                "Roll {0}".format(index), 
+                "[{1}]{0}[/{1}]".format(
+                    round(diceRoll, 4), 
+                    DiceRoller.__conditionalFormat(diceRoll, diceMax, 1)
+                ),
+                str(diceSum)
             )
+        self.rollTable.columns[2].footer = str(diceSum)
+        
+        # Define the statsitcs table
+        self.stasticsTable.add_column("Roll Stastics", no_wrap = True, width = 23)
+        self.stasticsTable.add_column("", no_wrap = True, width = 10)
+        
+        # Calculate the statsitcs for the roll
+        self.stasticsTable.add_row(
+            "Roll Max", 
+            str(round( numDice * diceMax, 4 ))
+        )
+        
+        self.stasticsTable.add_row(
+            "Roll Mean", 
+            str(round( ((diceMax + 1) / 2) * numDice, 4 ))
+        )
+        
+        self.stasticsTable.add_row(
+            "Roll Min",
+            str(round( numDice, 4 ))
+        )
+        
+        probability: float = DiceRoller.sumProbability(diceSum, numDice, diceMax) * 100
+        self.stasticsTable.add_row(
+            "Probability = X",
+            str(round( probability, 4 ))
+        )
+        
+        worseProbability: float = DiceRoller.sumAndBelowProbability(diceSum - 1, numDice, diceMax) * 100
+        self.stasticsTable.add_row(
+            "Probability < X",
+            str(round( worseProbability, 4 ))
+        )
+        
+        betterProbability: float = DiceRoller.sumAndAboveProbability(diceSum + 1, numDice, diceMax) * 100
+        self.stasticsTable.add_row(
+            "Probability > X",
+            str(round( betterProbability, 4 ))
+        ) 
+        
+        # Define the final numbers table
+        self.finalTable.add_column("Final Numbers", no_wrap = True, width = 23, footer = "Final Total", footer_style = "bold bright_magenta")
+        self.finalTable.add_column("", no_wrap = True, width = 10)
             
-            # Define the roll table
-            self.rollTable.add_column("Roll #", no_wrap = True, width = 10)
-            self.rollTable.add_column("Value", no_wrap = True, width = 10)
-            self.rollTable.add_column("Total", no_wrap = True, width = 10)
-            
-            # Roll and sum the dice
-            diceSum: int = 0
-            for index in range(numDice):
-                
-                diceRoll: int = random.randint(1, diceMax)
-                diceSum += diceRoll
-                
-                self.rolls.append(diceRoll)
-                
-                self.rollTable.add_row(
-                    "Roll {0}".format(index), 
-                    "[{1}]{0}[/{1}]".format(
-                        round(diceRoll, 4), 
-                        DiceRoller.__conditionalFormat(diceRoll, diceMax, 1)
-                    ),
-                    str(diceSum)
-                )
-            self.rollTable.columns[2].footer = str(diceSum)
-            
-            # Define the statsitcs table
-            self.stasticsTable.add_column("Roll Stastics", no_wrap = True, width = 23)
-            self.stasticsTable.add_column("", no_wrap = True, width = 10)
-            
-            # Calculate the statsitcs for the roll
-            self.stasticsTable.add_row(
-                "Roll Max", 
-                str(round( numDice * diceMax, 4 ))
-            )
-            
-            self.stasticsTable.add_row(
-                "Roll Mean", 
-                str(round( ((diceMax + 1) / 2) * numDice, 4 ))
-            )
-            
-            self.stasticsTable.add_row(
-                "Roll Min",
-                str(round( numDice, 4 ))
-            )
-            
-            probability: float = DiceRoller.sumProbability(diceSum, numDice, diceMax) * 100
-            self.stasticsTable.add_row(
-                "Probability = X",
-                str(round( probability, 4 ))
-            )
-            
-            worseProbability: float = DiceRoller.sumAndBelowProbability(diceSum - 1, numDice, diceMax) * 100
-            self.stasticsTable.add_row(
-                "Probability < X",
-                str(round( worseProbability, 4 ))
-            )
-            
-            betterProbability: float = DiceRoller.sumAndAboveProbability(diceSum + 1, numDice, diceMax) * 100
-            self.stasticsTable.add_row(
-                "Probability > X",
-                str(round( betterProbability, 4 ))
-            ) 
-            
-            # Define the final numbers table
-            self.finalTable.add_column("Final Numbers", no_wrap = True, width = 23, footer = "Final Total")
-            self.finalTable.add_column("", no_wrap = True, width = 10)
-                
-            # Add values
-            self.finalTable.add_row("Dice Sum", str( diceSum ))
-            self.finalTable.add_row("Modifier", "{:+}".format(modifier))
-            self.finalTable.columns[1].footer = str(diceSum + modifier)
+        # Add values
+        self.finalTable.add_row("Dice Sum", str( diceSum ))
+        
+        if operation:
+            self.finalTable.add_row("Modifier", "{0}{1}".format(operation, modifier))
+            self.finalTable.columns[1].footer = Text(str(eval("{0}{1}{2}".format(diceSum, operation, modifier))), style = "bold bright_magenta")
+        else:
+            self.finalTable.add_row("Modifier", "NA")
+            self.finalTable.columns[1].footer = Text(str(diceSum), style = "bold bright_magenta")
     
     
     
     @classmethod
-    def __readDiceSyntax(cls, rawInput: str) -> tuple:
-        
-        # Match format d20
-        if re.fullmatch("d\d+", rawInput):
+    def __readDiceSyntax(cls, rawInstruction: str) -> dict:
             
-            return 1, int(rawInput[1:]), 0
+        # Define the instruction dict to be built
+        instructionDict: dict = {
+            "numDice": 0,
+            "diceMax": 0,
+            "operation": None,
+            "modifier": None
+        }
         
-        # Match format 4d20
-        if re.fullmatch("\d+d\d+", rawInput):
-            inputs: list = re.split("d", rawInput)
-            inputs = [int(num) for num in inputs]
-            return inputs[0], inputs[1], 0
+        # Break the raw instruction into the dice rolling instructions and the modifier equation
+        rawDiceInstructionSpan: tuple = re.match("(\d+)?d\d+", rawInstruction).span()
         
-        # Match format d20+5
-        if re.fullmatch("d\d+(\+|\-)\d+", rawInput):
-            inputs: list = re.split("d|\+|\-", rawInput[1:])
-            inputs = [int(num) for num in inputs]
-            if "+" in rawInput: 
-                return 1, inputs[0], inputs[1]
-            if "-" in rawInput:
-                return 1, inputs[0], -inputs[1]
+        rawDiceInstruction: str = rawInstruction[rawDiceInstructionSpan[0]:rawDiceInstructionSpan[1]]
+        rawModifierEquation: str = rawInstruction[rawDiceInstructionSpan[1]:]
         
-        # Match format 4d20+5
-        if re.fullmatch("\d+d\d+(\+|\-)\d+", rawInput):
-            inputs: list = re.split("d|\+|\-", rawInput)
-            inputs = [int(num) for num in inputs]
-            if "+" in rawInput: 
-                return inputs[0], inputs[1], inputs[2]
-            if "-" in rawInput:
-                return inputs[0], inputs[1], -inputs[2]
-    
-        # Raise a value error if the arguments are not valid 
-        raise ValueError("Illegal dice syntax: {0}".format(rawInput))
+        # Split the format 3d10 into its seperate numbers
+        diceInstructions: list = re.split("d", rawDiceInstruction)
+        
+        # Ensure that the dice instructions are two tokens long
+        assert len(diceInstructions) == 2, "Invalid instruction: {0}".format(rawInstruction)
+        
+        # Set the num dice
+        if not diceInstructions[0]:
+            instructionDict["numDice"] = 1
+        else:
+            instructionDict["numDice"] = int(diceInstructions[0])
+            
+        # Set the dice max
+        instructionDict["diceMax"] = int(diceInstructions[1])
+        
+        # Set the modifier
+        try:
+            if rawModifierEquation:
+                instructionDict["operation"] = rawModifierEquation[0]
+                instructionDict["modifier"] = float(eval(rawModifierEquation[1:]))
+        except:
+            raise ValueError("Equation \"{0}\" is not computable".format(rawModifierEquation))
+        
+        # Return instruction dict
+        return instructionDict
                 
                 
                 
